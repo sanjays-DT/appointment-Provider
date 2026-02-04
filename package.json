@@ -1,25 +1,41 @@
 {
-  "name": "appointment-provider",
+  "$schema": "https://json.schemastore.org/package",
+  "name": "Appointment-Management-System",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 4000",
     "build": "next build",
-    "start": "next start",
+    "start": "next start 2000",
     "lint": "eslint"
   },
   "dependencies": {
-    "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "@heroicons/react": "^2.2.0",
+    "axios": "^1.13.2",
+    "chart.js": "^4.5.1",
+    "js-cookie": "^3.0.5",
+    "jwt-decode": "^4.0.0",
+    "lucide-react": "^0.562.0",
+    "next": "^16.1.0",
+    "react": "^18.3.1",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.5.0",
+    "react-toastify": "^11.0.5",
+    "recharts": "^2.6.2",
+    "toastify": "^2.0.1",
+    "validator": "^13.15.26"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/js-cookie": "^3.0.6",
+    "@types/jwt-decode": "^2.2.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/validator": "^13.15.10",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "16.0.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
