@@ -1,26 +1,41 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { bufferToImage } from "@/lib/image";
+import { BASE_URL } from "@/lib/axios";
+import { getProviderAvatarURL } from "@/services/providerService";
+import { LogOut, LogIn, UserPlus } from "lucide-react";
 
 export default function Navbar() {
   const { provider, isAuthenticated, logout } = useAuth();
 
-  /* ================= AVATAR (BUFFER SUPPORT) ================= */
-   const avatarSrc =
-    provider && provider.id
-      ? `http://localhost:5000/api/providers/${provider.id}/avatar`
-      : "/default-avatar.png";
+  /* ================= AVATAR (BUFFER + URL SUPPORT) ================= */
+  const avatarFromBuffer = useMemo(() => {
+    if (!provider?.avatar) return null;
+    return bufferToImage(provider.avatar);
+  }, [provider?.avatar]);
+
+  useEffect(() => {
+    return () => {
+      if (avatarFromBuffer) URL.revokeObjectURL(avatarFromBuffer);
+    };
+  }, [avatarFromBuffer]);
+
+  const avatarSrc =
+    avatarFromBuffer ||
+    (provider?.id ? getProviderAvatarURL(provider.id, BASE_URL) : null) ||
+    "/default-avatar.png";
 
   return (
     <header
       className="
+        sticky top-0 z-30
         flex justify-between items-center
-        bg-white dark:bg-neutral-900
-        px-6 py-4
-        border-b border-gray-200 dark:border-neutral-800
+        bg-white/90 dark:bg-neutral-900/90 backdrop-blur
+        px-4 sm:px-6 py-4
+        border-b border-gray-200/80 dark:border-neutral-800/80
       "
     >
       {/* ================= LEFT ================= */}
@@ -35,23 +50,29 @@ export default function Navbar() {
           <Link
             href="/"
             className="
-              text-sm font-medium
+              h-9 w-9 inline-flex items-center justify-center rounded-lg
               text-gray-700 dark:text-gray-300
-              hover:text-blue-600
+              hover:text-white hover:bg-blue-600
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
             "
+            aria-label="Login"
+            title="Login"
           >
-            Login
+            <LogIn size={18} />
           </Link>
 
           <Link
             href="/register"
             className="
-              px-4 py-2 rounded-lg
-              bg-blue-600 hover:bg-blue-700
-              text-white text-sm font-semibold
+              h-9 w-9 inline-flex items-center justify-center rounded-lg
+              text-gray-700 dark:text-gray-300
+              hover:text-white hover:bg-blue-600
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
             "
+            aria-label="Register"
+            title="Register"
           >
-            Register
+            <UserPlus size={18} />
           </Link>
         </div>
       ) : (
@@ -62,7 +83,7 @@ export default function Navbar() {
             <img
               src={avatarSrc || "/avatar.png"}
               alt="Avatar"
-              className="w-9 h-9 rounded-full object-cover border"
+              className="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-neutral-700"
             />
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {provider?.name}
@@ -73,12 +94,14 @@ export default function Navbar() {
           <button
             onClick={logout}
             className="
-              px-4 py-2 rounded-lg
+              h-9 w-9 inline-flex items-center justify-center rounded-lg
               bg-red-500 hover:bg-red-600
               text-white text-sm font-medium transition
             "
+            aria-label="Logout"
+            title="Logout"
           >
-            Logout
+            <LogOut size={18} />
           </button>
         </div>
       )}

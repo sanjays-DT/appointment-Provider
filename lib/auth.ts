@@ -26,13 +26,23 @@ export const removeToken = () => {
 
 export const setProvider = (provider: any) => {
   if (typeof window === "undefined") return;
+  if (provider === undefined || provider === null) {
+    localStorage.removeItem(PROVIDER_KEY);
+    return;
+  }
   localStorage.setItem(PROVIDER_KEY, JSON.stringify(provider));
 };
 
 export const getProvider = () => {
   if (typeof window === "undefined") return null;
   const data = localStorage.getItem(PROVIDER_KEY);
-  return data ? JSON.parse(data) : null;
+  if (!data || data === "undefined" || data === "null") return null;
+  try {
+    return JSON.parse(data);
+  } catch {
+    localStorage.removeItem(PROVIDER_KEY);
+    return null;
+  }
 };
 
 /* ================= JWT ================= */

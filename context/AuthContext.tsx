@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   createContext,
@@ -16,10 +16,12 @@ import {
   removeToken,
   getDecodedToken,
 } from "@/lib/auth";
+import { getProvider as fetchProvider } from "@/services/providerService";
 
 interface AuthContextType {
   provider: any;
   isAuthenticated: boolean;
+  isInitializing: boolean;
   login: (token: string, provider: any) => void;
   logout: () => void;
 }
@@ -31,25 +33,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [provider, setProviderState] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   /* ================= INIT ================= */
   useEffect(() => {
-    const token = getToken();
-    const savedProvider = getProvider();
+    const init = async () => {
+      const token = getToken();
+      const savedProvider = getProvider();
 
-    if (!token || !savedProvider) {
-      logout();
-      return;
-    }
+      const decoded: any = getDecodedToken();
+      if (!token || !decoded?.exp || Date.now() >= decoded.exp * 1000) {
+        logout();
+        setIsInitializing(false);
+        return;
+      }
 
-    const decoded: any = getDecodedToken();
-    if (!decoded?.exp || Date.now() >= decoded.exp * 1000) {
-      logout();
-      return;
-    }
+      if (savedProvider) {
+        setProviderState(savedProvider);
+      } else if (decoded?.id) {
+        try {
+          const providerData = await fetchProvider(decoded.id);
+          setProvider(providerData);
+          setProviderState(providerData);
+        } catch {
+          // If fetching provider fails, keep auth based on valid token
+        }
+      }
 
-    setProviderState(savedProvider);
-    setIsAuthenticated(true);
+      setIsAuthenticated(true);
+      setIsInitializing(false);
+    };
+
+    init();
   }, []);
 
   /* ================= LOGIN ================= */
@@ -71,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ provider, isAuthenticated, login, logout }}
+      value={{ provider, isAuthenticated, isInitializing, login, logout }}
     >
       {children}
     </AuthContext.Provider>

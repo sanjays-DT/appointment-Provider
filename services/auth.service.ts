@@ -3,10 +3,9 @@ import axios from "axios";
 import { LoginPayload, RegisterPayload, AuthResponse } from "@/types/auth";
 const API_URL = "http://localhost:5000/api/providers/auth";
 
-
 export const loginProvider = async (payload: LoginPayload) => {
   const { data } = await axios.post<AuthResponse>(
-    `${API_URL}/login`,
+    `http://localhost:5000/api/auth/login`,
     payload
   );
   return data;

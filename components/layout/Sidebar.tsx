@@ -4,7 +4,6 @@ import Link from "next/link";
 export default function Sidebar() {
   return (
     <aside className="w-64 bg-white dark:bg-neutral-900 border-r border-gray-200 dark:border-neutral-800 p-6 flex flex-col">
-      <h1 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">Provider Panel</h1>
       <nav className="space-y-2 flex-1">
         {[
           { name: "Dashboard", href: "/dashboard" },
