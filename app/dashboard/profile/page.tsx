@@ -2,14 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Provider } from "@/types/provider";
-import { createProvider, getProvider, updateProvider } from "@/services/providerService";
+import { createProvider, getProvider, getProviderAvatarURL, updateProvider } from "@/services/providerService";
 import { getCategories } from "@/services/categoryService";
 import { toast } from "react-toastify";
-import { useRouter } from "next/navigation";
-import { getProviderAvatarURL } from "@/services/providerService";
 import { BASE_URL } from "@/lib/axios";
 import { getDecodedToken, getProvider as getStoredProvider } from "@/lib/auth";
-import { Pencil, Save, ArrowLeft } from "lucide-react";
+import { Pencil, Save, ArrowLeft, User, Camera } from "lucide-react";
 
 type ProviderFormState = {
   name: string;
@@ -24,11 +22,10 @@ type ProviderFormState = {
 type ProviderFormErrors = Partial<Record<keyof ProviderFormState, string>>;
 
 export default function ProviderForm() {
-  const router = useRouter();
-
   const [categories, setCategories] = useState<{ _id: string; name: string }[]>([]);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string>("");
+  const [initialPreview, setInitialPreview] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [providerId, setProviderId] = useState<string | null>(null);
@@ -46,9 +43,8 @@ export default function ProviderForm() {
   });
 
   const [errors, setErrors] = useState<ProviderFormErrors>({});
-  const [title, setTitle] = useState("Profile");
 
-  /* ---------------- FETCH CATEGORIES ---------------- */
+  /** Fetch categories */
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -61,7 +57,7 @@ export default function ProviderForm() {
     fetchCategories();
   }, []);
 
-  /* ---------------- GET PROVIDER ID ---------------- */
+  /** Get provider id */
   useEffect(() => {
     const stored = getStoredProvider();
     const decoded = getDecodedToken();
@@ -69,7 +65,7 @@ export default function ProviderForm() {
     setProviderId(id);
   }, []);
 
-  /* ---------------- FETCH PROVIDER FOR EDIT ---------------- */
+  /** Fetch provider data */
   useEffect(() => {
     if (!providerId) {
       setInitialLoading(false);
@@ -95,7 +91,9 @@ export default function ProviderForm() {
         setFormData(nextFormData);
         setInitialFormData(nextFormData);
 
-        setPreview(getProviderAvatarURL(providerId, BASE_URL));
+        const avatarURL = getProviderAvatarURL(providerId, BASE_URL);
+        setPreview(avatarURL);
+        setInitialPreview(avatarURL);
       } catch {
         toast.error("Failed to fetch provider");
       } finally {
@@ -106,19 +104,19 @@ export default function ProviderForm() {
     fetchProvider();
   }, [providerId]);
 
-  /* ---------------- HANDLE INPUT CHANGE ---------------- */
+  /** Form change handler */
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: name === "hourlyPrice" ? (value === "" ? "" : Number(value)) : value,
     }));
-    setErrors(prev => ({ ...prev, [name]: undefined }));
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
-  /* ---------------- HANDLE AVATAR CHANGE ---------------- */
+  /** Avatar change handler */
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -128,34 +126,29 @@ export default function ProviderForm() {
     }
   };
 
+  /** Revoke blob URL on cleanup */
   useEffect(() => {
     return () => {
-      if (preview?.startsWith("blob:")) {
-        URL.revokeObjectURL(preview);
-      }
+      if (preview?.startsWith("blob:")) URL.revokeObjectURL(preview);
     };
   }, [preview]);
 
-  /* ---------------- VALIDATE FORM ---------------- */
+  /** Form validation */
   const validateForm = () => {
     const newErrors: ProviderFormErrors = {};
-
     if (!formData.name?.trim()) newErrors.name = "Name is required";
     if (!formData.speciality?.trim()) newErrors.speciality = "Speciality is required";
     if (!formData.city?.trim()) newErrors.city = "City is required";
     if (!formData.address?.trim()) newErrors.address = "Address is required";
-    if (formData.hourlyPrice === "" || formData.hourlyPrice <= 0)
-      newErrors.hourlyPrice = "Hourly price must be greater than 0";
+    if (formData.hourlyPrice === "" || formData.hourlyPrice <= 0) newErrors.hourlyPrice = "Hourly price must be greater than 0";
     if (!formData.categoryId) newErrors.categoryId = "Category is required";
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  /* ---------------- HANDLE SUBMIT ---------------- */
+  /** Submit handler */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!isEditing) return;
 
     if (!validateForm()) {
@@ -185,6 +178,8 @@ export default function ProviderForm() {
       }
 
       setInitialFormData(formData);
+      setInitialPreview(preview);
+      setAvatarFile(null);
       setIsEditing(false);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to save provider");
@@ -193,22 +188,7 @@ export default function ProviderForm() {
     }
   };
 
-  /* ---------------- UI STYLES ---------------- */
-  const input = `w-full rounded-xl border px-4 py-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition
-    border-gray-300 bg-white text-gray-800
-    dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200
-  `;
-
-  const sectionHeader = `text-gray-800 dark:text-gray-100`;
-  const formBg = `bg-white border-gray-200 text-gray-900 dark:bg-neutral-900 dark:border-neutral-800 dark:text-gray-200`;
-  const pageBg = `bg-slate-50 dark:bg-neutral-950`;
-
   const formDisabled = loading || initialLoading || !providerId || !isEditing;
-  const inputClass = (key: keyof ProviderFormState) =>
-    `${input} ${errors[key] ? "border-red-500 focus:ring-red-500" : ""}`;
-
-  const errorText = (key: keyof ProviderFormState) =>
-    errors[key] ? <p className="text-red-500 text-sm mt-1">{errors[key]}</p> : null;
 
   const statusMessage = useMemo(() => {
     if (initialLoading) return "Loading profile...";
@@ -217,236 +197,185 @@ export default function ProviderForm() {
   }, [initialLoading, providerId]);
 
   return (
-    <div className={`w-full px-4 sm:px-6 py-8 min-h-screen ${pageBg}`}>
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="mb-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className={`text-3xl font-bold ${sectionHeader}`}>{title}</h1>
-              <p className="text-gray-500 dark:text-gray-400 mt-1">
-                Manage provider profile and pricing details
-              </p>
-            </div>
+    <div className="h-[520px] flex justify-center items-center bg-slate-100 dark:bg-neutral-950 px-4 relative top-6">
+      <div className="w-full max-w-4xl h-full bg-white dark:bg-neutral-900 rounded-3xl shadow-xl overflow-hidden flex">
 
-            <button
-              type="button"
-              onClick={() => setIsEditing(true)}
-              disabled={!providerId || initialLoading || loading || isEditing}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
-              bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition
-              disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Edit profile"
-            >
-              <Pencil size={16} />
-              Edit
-            </button>
-          </div>
-          {statusMessage && (
-            <p className="mt-3 text-sm text-red-500">{statusMessage}</p>
+        {/* LEFT SIDE - FULL IMAGE */}
+        <div className="w-1/3 h-full relative flex items-center justify-center">
+          {preview ? (
+            <img src={preview} alt="Avatar" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gray-300 dark:bg-neutral-800 flex items-center justify-center">
+              <User size={60} className="text-white/70" />
+            </div>
           )}
+
+          {isEditing && (
+            <label
+              htmlFor="avatarUpload"
+              className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition cursor-pointer"
+            >
+              <Camera size={22} className="text-white" />
+            </label>
+          )}
+
+          <input
+            id="avatarUpload"
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            className="hidden"
+            disabled={formDisabled}
+          />
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className={`rounded-2xl shadow-sm border p-8 space-y-8 ${formBg}`}
-        >
-          {/* BASIC INFO */}
-          <section>
-            <h3 className={`text-lg font-semibold mb-4 ${sectionHeader}`}>
-              Basic Information
-            </h3>
+        {/* RIGHT SIDE - FORM */}
+        <div className="w-2/3 h-full p-6 flex flex-col justify-between overflow-hidden">
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
+          {statusMessage && (
+            <div className="mb-4 p-3 rounded-lg bg-red-100 text-red-600 text-sm">
+              {statusMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-2 space-y-5">
+            {/* Basic Info */}
+            <div>
+              <h3 className="text-md font-semibold mb-3 text-slate-900 dark:text-gray-100">Basic Information</h3>
+              <div className="grid grid-cols-2 gap-3">
                 <input
                   name="name"
-                  placeholder="Provider name"
-                  value={formData.name || ""}
+                  value={formData.name}
                   onChange={handleChange}
-                  className={inputClass("name")}
+                  placeholder="Full Name"
                   disabled={formDisabled}
+                  className={fieldClass(!!errors.name, formDisabled)}
                 />
-                {errorText("name")}
-              </div>
-
-              <div>
                 <input
                   name="speciality"
-                  placeholder="Speciality"
-                  value={formData.speciality || ""}
+                  value={formData.speciality}
                   onChange={handleChange}
-                  className={inputClass("speciality")}
+                  placeholder="Speciality"
                   disabled={formDisabled}
+                  className={fieldClass(!!errors.speciality, formDisabled)}
                 />
-                {errorText("speciality")}
-              </div>
-
-              <div>
                 <input
                   name="city"
-                  placeholder="City"
-                  value={formData.city || ""}
+                  value={formData.city}
                   onChange={handleChange}
-                  className={inputClass("city")}
+                  placeholder="City"
                   disabled={formDisabled}
+                  className={fieldClass(!!errors.city, formDisabled)}
                 />
-                {errorText("city")}
-              </div>
-
-              <div>
                 <input
                   name="address"
-                  placeholder="Address"
-                  value={formData.address || ""}
+                  value={formData.address}
                   onChange={handleChange}
-                  className={inputClass("address")}
+                  placeholder="Address"
                   disabled={formDisabled}
+                  className={fieldClass(!!errors.address, formDisabled)}
                 />
-                {errorText("address")}
               </div>
             </div>
-          </section>
 
-          {/* PRICING */}
-          <section>
-            <h3 className={`text-lg font-semibold mb-4 ${sectionHeader}`}>
-              Pricing & Category
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
+            {/* Pricing & Category */}
+            <div>
+              <h3 className="text-md font-semibold mb-3 text-slate-900 dark:text-gray-100">Pricing & Category</h3>
+              <div className="grid grid-cols-2 gap-3">
                 <input
                   type="number"
                   name="hourlyPrice"
-                  placeholder="Hourly Price"
-                  value={formData.hourlyPrice ?? ""}
+                  value={formData.hourlyPrice}
                   onChange={handleChange}
-                  className={inputClass("hourlyPrice")}
+                  placeholder="Hourly Price"
                   disabled={formDisabled}
+                  className={fieldClass(!!errors.hourlyPrice, formDisabled)}
                 />
-                {errorText("hourlyPrice")}
-              </div>
-
-              <div>
                 <select
                   name="categoryId"
-                  value={formData.categoryId || ""}
+                  value={formData.categoryId}
                   onChange={handleChange}
-                  className={inputClass("categoryId")}
                   disabled={formDisabled}
+                  className={fieldClass(!!errors.categoryId, formDisabled)}
                 >
                   <option value="">Select Category</option>
                   {categories.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                    </option>
+                    <option key={c._id} value={c._id}>{c.name}</option>
                   ))}
                 </select>
-                {errorText("categoryId")}
               </div>
             </div>
-          </section>
 
-          {/* BIO */}
-          <section>
-            <h3 className={`text-lg font-semibold mb-4 ${sectionHeader}`}>Bio</h3>
-            <textarea
-              name="bio"
-              rows={4}
-              placeholder="Short description about the provider"
-              value={formData.bio || ""}
-              onChange={handleChange}
-              className={inputClass("bio")}
-              disabled={formDisabled}
-            />
-          </section>
-
-          {/* AVATAR */}
-          <section>
-            <h3 className={`text-lg font-semibold mb-4 ${sectionHeader}`}>
-              Profile Picture
-            </h3>
-
-            <div className="flex items-center gap-6">
-              {/* Preview */}
-              {preview ? (
-                <img
-                  src={preview}
-                  alt="Avatar Preview"
-                  className="w-24 h-24 rounded-full object-cover border shadow-sm border-gray-300 dark:border-gray-600"
-                />
-              ) : (
-                <div className="w-24 h-24 rounded-full border border-dashed flex items-center justify-center text-sm text-gray-400 border-gray-300 dark:text-gray-400 dark:border-gray-600">
-                  No Image
-                </div>
-              )}
-
-              {/* Upload control */}
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="avatarUpload"
-                  className={`inline-flex items-center justify-center px-5 py-2.5 rounded-xl
-                  bg-blue-600 text-white text-sm font-medium cursor-pointer
-                  hover:bg-blue-700 transition shadow-sm
-                  ${formDisabled ? "opacity-60 cursor-not-allowed" : ""}`}
-                >
-                  Choose Image
-                </label>
-
-                <input
-                  id="avatarUpload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="hidden"
-                  disabled={formDisabled}
-                />
-
-                <span className="text-gray-500 dark:text-gray-400 text-sm">
-                  {avatarFile ? avatarFile.name : "No file chosen"}
-                </span>
-              </div>
+            {/* Bio */}
+            <div>
+              <h3 className="text-md font-semibold mb-2 text-slate-900 dark:text-gray-100">Bio</h3>
+              <textarea
+                name="bio"
+                rows={3}
+                value={formData.bio}
+                onChange={handleChange}
+                placeholder="Tell clients about yourself..."
+                disabled={formDisabled}
+                className={`${fieldClass(false, formDisabled)} resize-none`}
+              />
             </div>
-          </section>
+          </form>
 
-          {/* ACTIONS */}
-          <div className="flex justify-end gap-4 pt-6 border-t">
+          {/* Buttons */}
+          <div className="flex justify-center gap-4 pt-4 border-t border-slate-200 dark:border-neutral-800">
             <button
               type="button"
               onClick={() => {
-                if (!isEditing) {
-                  router.push("/dashboard");
-                  return;
-                }
+                if (!isEditing) return;
                 if (initialFormData) {
                   setFormData(initialFormData);
                   setErrors({});
                   setAvatarFile(null);
+                  setPreview(initialPreview); // <-- restore old image
                 }
                 setIsEditing(false);
               }}
-              disabled={loading}
-              className={`px-6 py-3 rounded-xl transition bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
+              disabled={!isEditing}
+              className="p-2 rounded-lg bg-slate-200 dark:bg-neutral-800 text-slate-700 dark:text-gray-200 hover:bg-slate-300 transition"
+              title="Cancel"
             >
-              <span className="inline-flex items-center gap-2">
-                <ArrowLeft size={16} />
-                {isEditing ? "Cancel" : "Back"}
-              </span>
+              <ArrowLeft size={18} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              disabled={isEditing}
+              className="p-2 rounded-lg bg-gray-600 text-white hover:bg-gray-700 transition"
+              title="Edit"
+            >
+              <Pencil size={18} />
             </button>
 
             <button
               type="submit"
               disabled={formDisabled}
-              className="h-12 w-12 rounded-xl transition bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 inline-flex items-center justify-center"
-              aria-label="Save profile"
-              title="Save profile"
+              className="p-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition"
+              title="Save Changes"
             >
               {loading ? "..." : <Save size={18} />}
             </button>
           </div>
-        </form>
+
+        </div>
       </div>
     </div>
   );
+}
+
+function fieldClass(hasError: boolean, disabled: boolean) {
+  return [
+    "w-full rounded-lg border px-3 py-2 text-sm transition-all duration-150",
+    "bg-white dark:bg-neutral-900 text-slate-900 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-500",
+    "focus:outline-none focus:ring-2 focus:ring-offset-1",
+    hasError
+      ? "border-destructive focus:ring-destructive/30"
+      : "border-slate-300 dark:border-neutral-700 focus:ring-blue-200 dark:focus:ring-blue-900/60 focus:border-blue-400 dark:focus:border-blue-500",
+    disabled ? "opacity-60 cursor-not-allowed" : "",
+  ].join(" ");
 }

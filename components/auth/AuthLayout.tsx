@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="h-[564px] flex bg-gray-100 dark:bg-gray-900 transition-colors">
+    <div className="min-h-[564px] flex bg-gray-100 dark:bg-gray-900 transition-colors">
       {/* Left Section */}
       <div className="hidden lg:flex w-1/2 items-center justify-center bg-gradient-to-br from-blue-600 to-purple-600 text-white px-16">
         <div className="max-w-md text-center">
