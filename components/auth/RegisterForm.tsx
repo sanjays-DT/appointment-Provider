@@ -14,6 +14,8 @@ import {
   MapPin,
   Briefcase,
   IndianRupee,
+  CalendarCheck,
+  TrendingUp
 } from "lucide-react";
 import { validateProvider } from "@/utils/validation";
 import Link from "next/link";
@@ -120,10 +122,40 @@ export default function ProviderRegisterForm() {
   return (
     <div className="min-h-[564px] flex bg-gray-100 dark:bg-gray-900 transition-colors">
       {/* Left Section */}
-      <div className=" hidden lg:flex w-1/2 items-center justify-center bg-gradient-to-br from-blue-600 to-purple-600 text-white px-16">
-        <div className="max-w-md text-center">
-          <h1 className="text-4xl font-bold mb-4">Provider On Boarding</h1>
-      </div>
+      <div className="hidden lg:flex w-1/2 items-center justify-center bg-gradient-to-br from-blue-600 to-purple-600 text-white px-16">
+        <div className="max-w-md text-center space-y-6">
+
+          {/* Icon */}
+          <div className="flex justify-center">
+            <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-sm">
+              <Briefcase size={40} />
+            </div>
+          </div>
+
+          {/* Heading */}
+          <h1 className="text-4xl font-bold">
+            Provider Onboarding
+          </h1>
+
+          {/* Supporting Text */}
+          <p className="text-blue-100 text-lg leading-relaxed">
+            Set up your profile, manage your availability, and start receiving
+            appointment requests from clients seamlessly.
+          </p>
+
+          {/* Feature Highlights */}
+          <div className="space-y-3 pt-4 text-sm text-blue-100">
+            <div className="flex items-center justify-center gap-2">
+              <CalendarCheck size={16} />
+              <span>Manage Appointments Easily</span>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <TrendingUp size={16} />
+              <span>Grow Your Client Base</span>
+            </div>
+          </div>
+
+        </div>
       </div>
 
       <div className="flex items-center justify-center px-6">

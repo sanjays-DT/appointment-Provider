@@ -116,8 +116,8 @@ export default function AppointmentsTable() {
           slotTime: `${new Date(appt.start)
             .toTimeString()
             .slice(0, 5)} - ${new Date(appt.end)
-            .toTimeString()
-            .slice(0, 5)}`,
+              .toTimeString()
+              .slice(0, 5)}`,
         });
       }
 
@@ -262,28 +262,28 @@ export default function AppointmentsTable() {
   const normalizedQuery = searchTerm.trim().toLowerCase();
   const filteredAppointments = normalizedQuery
     ? appointments.filter((appt) => {
-        const userName =
-          typeof appt.userId === "string" ? appt.userId : appt.userId?.name || "";
-        const providerName =
-          typeof appt.providerId === "string"
-            ? appt.providerId
-            : appt.providerId?.name || "";
-        const startText = new Date(appt.start).toLocaleString();
-        const endText = new Date(appt.end).toLocaleString();
-        const status = appt.status || "";
+      const userName =
+        typeof appt.userId === "string" ? appt.userId : appt.userId?.name || "";
+      const providerName =
+        typeof appt.providerId === "string"
+          ? appt.providerId
+          : appt.providerId?.name || "";
+      const startText = new Date(appt.start).toLocaleString();
+      const endText = new Date(appt.end).toLocaleString();
+      const status = appt.status || "";
 
-        const haystack = [
-          userName,
-          providerName,
-          startText,
-          endText,
-          status,
-        ]
-          .join(" ")
-          .toLowerCase();
+      const haystack = [
+        userName,
+        providerName,
+        startText,
+        endText,
+        status,
+      ]
+        .join(" ")
+        .toLowerCase();
 
-        return haystack.includes(normalizedQuery);
-      })
+      return haystack.includes(normalizedQuery);
+    })
     : appointments;
 
   return (
@@ -298,7 +298,7 @@ export default function AppointmentsTable() {
           <div>
             <h2 className="text-2xl font-bold">Appointments</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-               approve, or reject appointment requests.
+              approve, or reject appointment requests.
             </p>
           </div>
           <div className="w-full md:w-80">
@@ -337,44 +337,47 @@ export default function AppointmentsTable() {
             </thead>
 
             <tbody>
-                {filteredAppointments.map(appt => (
-                  <Fragment key={appt._id}>
-                    <tr
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-                    >
-                      <td className="px-4 py-3">
-                        {typeof appt.userId === "string"
-                          ? appt.userId
-                          : appt.userId?.name}
-                      </td>
+              {filteredAppointments.map(appt => (
+                <Fragment key={appt._id}>
+                  <tr
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                  >
+                    <td className="px-4 py-3">
+                      {typeof appt.userId === "string"
+                        ? appt.userId
+                        : appt.userId?.name}
+                    </td>
 
-                      <td className="px-4 py-3">
-                        {new Date(appt.start).toLocaleString()}
-                      </td>
+                    <td className="px-4 py-3">
+                      {new Date(appt.start).toLocaleString()}
+                    </td>
 
-                      <td className="px-4 py-3">
-                        {new Date(appt.end).toLocaleString()}
-                      </td>
+                    <td className="px-4 py-3">
+                      {new Date(appt.end).toLocaleString()}
+                    </td>
 
-                      <td className="px-4 py-3 font-semibold capitalize">
-                        <span
-                          className={
-                            appt.status === "approved"
-                              ? "text-green-600 dark:text-green-400"
-                              : appt.status === "rejected"
+                    <td className="px-4 py-3 font-semibold capitalize">
+                      <span
+                        className={
+                          appt.status === "approved"
+                            ? "text-green-600 dark:text-green-400"
+                            : appt.status === "rejected"
                               ? "text-red-600 dark:text-red-400"
                               : appt.status === "pending"
-                              ? "text-yellow-600 dark:text-yellow-400"
-                              : "text-gray-400 dark:text-gray-500"
-                          }
-                        >
-                          {appt.status}
-                        </span>
-                      </td>
+                                ? "text-yellow-600 dark:text-yellow-400"
+                                : "text-gray-400 dark:text-gray-500"
+                        }
+                      >
+                        {appt.status}
+                      </span>
+                    </td>
 
-                      <td className="px-4 py-3">
-                        {appt.status === "pending" && (
-                          <div className="flex gap-2">
+                    <td className="px-4 py-3">
+                      {(appt.status === "pending" || appt.status === "missed") && (
+                        <div className="flex gap-2">
+
+                          {/* Approve - only for pending */}
+                          {appt.status === "pending" && (
                             <button
                               onClick={() => handleApprove(appt._id)}
                               className="h-9 w-9 inline-flex items-center justify-center rounded-lg bg-green-500 hover:bg-green-600 text-white"
@@ -383,94 +386,101 @@ export default function AppointmentsTable() {
                             >
                               <CheckCircle size={18} />
                             </button>
-                            <button
-                              onClick={() => handleReject(appt)}
-                              className="h-9 w-9 inline-flex items-center justify-center rounded-lg bg-red-500 hover:bg-red-600 text-white"
-                              aria-label="Reject appointment"
-                              title="Reject appointment"
-                            >
-                              <XCircle size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleOpenReschedule(appt)}
-                              className="h-9 w-9 inline-flex items-center justify-center rounded-lg bg-blue-500 hover:bg-blue-600 text-white"
-                              aria-label="Reschedule appointment"
-                              title="Reschedule appointment"
-                            >
-                              <Clock size={18} />
-                            </button>
+                          )}
+
+                          {/* Reject - allowed for both */}
+                          <button
+                            onClick={() => handleReject(appt)}
+                            className="h-9 w-9 inline-flex items-center justify-center rounded-lg bg-red-500 hover:bg-red-600 text-white"
+                            aria-label="Reject appointment"
+                            title="Reject appointment"
+                          >
+                            <XCircle size={18} />
+                          </button>
+
+                          {/* Reschedule - allowed for both */}
+                          <button
+                            onClick={() => handleOpenReschedule(appt)}
+                            className="h-9 w-9 inline-flex items-center justify-center rounded-lg bg-blue-500 hover:bg-blue-600 text-white"
+                            aria-label="Reschedule appointment"
+                            title="Reschedule appointment"
+                          >
+                            <Clock size={18} />
+                          </button>
+
+                        </div>
+                      )}
+
+                    </td>
+                  </tr>
+
+                  {rescheduleId === appt._id && (
+                    <tr className="bg-blue-50/60 dark:bg-blue-950/20">
+                      <td className="px-4 py-4" colSpan={5}>
+                        <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                              Date
+                            </label>
+                            <input
+                              type="date"
+                              value={rescheduleDate}
+                              min={formatDateInput(new Date())}
+                              onChange={async (e) => {
+                                const nextDate = e.target.value;
+                                setRescheduleDate(nextDate);
+                                setSelectedRescheduleSlot("");
+                                await fetchRescheduleSlots(appt, nextDate);
+                              }}
+                              className="rounded-lg border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+                            />
                           </div>
-                        )}
-                      </td>
-                    </tr>
 
-                    {rescheduleId === appt._id && (
-                      <tr className="bg-blue-50/60 dark:bg-blue-950/20">
-                        <td className="px-4 py-4" colSpan={5}>
-                          <div className="flex flex-col gap-3 md:flex-row md:items-end md:gap-4">
-                            <div className="flex flex-col gap-1">
-                              <label className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                                Date
-                              </label>
-                              <input
-                                type="date"
-                                value={rescheduleDate}
-                                min={formatDateInput(new Date())}
-                                onChange={async (e) => {
-                                  const nextDate = e.target.value;
-                                  setRescheduleDate(nextDate);
-                                  setSelectedRescheduleSlot("");
-                                  await fetchRescheduleSlots(appt, nextDate);
-                                }}
-                                className="rounded-lg border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
-                              />
-                            </div>
-
-                            <div className="flex flex-col gap-1 min-w-[240px]">
-                              <label className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                                Available Slots
-                              </label>
-                              <select
-                                value={selectedRescheduleSlot}
-                                onChange={(e) => setSelectedRescheduleSlot(e.target.value)}
-                                disabled={loadingRescheduleSlots || rescheduleSlots.length === 0}
-                                className="rounded-lg border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
-                              >
-                                <option value="">
-                                  {loadingRescheduleSlots
-                                    ? "Loading slots..."
-                                    : rescheduleSlots.length
+                          <div className="flex flex-col gap-1 min-w-[240px]">
+                            <label className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                              Available Slots
+                            </label>
+                            <select
+                              value={selectedRescheduleSlot}
+                              onChange={(e) => setSelectedRescheduleSlot(e.target.value)}
+                              disabled={loadingRescheduleSlots || rescheduleSlots.length === 0}
+                              className="rounded-lg border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm"
+                            >
+                              <option value="">
+                                {loadingRescheduleSlots
+                                  ? "Loading slots..."
+                                  : rescheduleSlots.length
                                     ? "Select a slot"
                                     : "No slots available"}
+                              </option>
+                              {rescheduleSlots.map((slot) => (
+                                <option key={slot} value={slot}>
+                                  {slot}
                                 </option>
-                                {rescheduleSlots.map((slot) => (
-                                  <option key={slot} value={slot}>
-                                    {slot}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleRescheduleSave(appt)}
-                                disabled={loadingRescheduleSlots || !selectedRescheduleSlot}
-                                className="rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2 text-sm"
-                              >
-                                Save
-                              </button>
-                              <button
-                                onClick={closeReschedule}
-                                className="rounded-lg border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-2 text-sm"
-                              >
-                                Cancel
-                              </button>
-                            </div>
+                              ))}
+                            </select>
                           </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
+
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleRescheduleSave(appt)}
+                              disabled={loadingRescheduleSlots || !selectedRescheduleSlot}
+                              className="rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2 text-sm"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={closeReschedule}
+                              className="rounded-lg border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-2 text-sm"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
             </tbody>
 

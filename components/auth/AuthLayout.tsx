@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { User, Shield, KeyRound } from "lucide-react";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -15,15 +16,23 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
           <div className="flex justify-center gap-10 text-blue-100">
             <div className="text-center">
-              <div className="text-2xl mb-2">👤</div>
+              <div className="mb-2 flex justify-center">
+                <User size={22} className="text-gray-600 dark:text-gray-300" />
+              </div>
               <p className="text-sm">Profile</p>
             </div>
+
             <div className="text-center">
-              <div className="text-2xl mb-2">🔒</div>
+              <div className="mb-2 flex justify-center">
+                <Shield size={22} className="text-gray-600 dark:text-gray-300" />
+              </div>
               <p className="text-sm">Security</p>
             </div>
+
             <div className="text-center">
-              <div className="text-2xl mb-2">📩</div>
+              <div className="mb-2 flex justify-center">
+                <KeyRound size={22} className="text-gray-600 dark:text-gray-300" />
+              </div>
               <p className="text-sm">Access</p>
             </div>
           </div>
