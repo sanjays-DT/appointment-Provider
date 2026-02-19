@@ -18,6 +18,7 @@
     "lucide-react": "^0.562.0",
     "next": "^16.1.0",
     "react": "^18.3.1",
+    "react-chart.js": "^1.0.0",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.5.0",
