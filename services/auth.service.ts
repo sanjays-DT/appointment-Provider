@@ -1,4 +1,3 @@
-// services/auth.service.ts
 import axios from "axios";
 import { LoginPayload, RegisterPayload, AuthResponse } from "@/types/auth";
 const API_URL = "http://localhost:5000/api/providers/auth";
