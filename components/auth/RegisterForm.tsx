@@ -14,6 +14,8 @@ import {
   MapPin,
   Briefcase,
   IndianRupee,
+  CalendarCheck,
+  TrendingUp
 } from "lucide-react";
 import { validateProvider } from "@/utils/validation";
 import Link from "next/link";
@@ -54,6 +56,12 @@ export default function ProviderRegisterForm() {
       })
       .catch(() => toast.error("Failed to load categories"));
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
 
   /* ================= INPUT ================= */
   const handleChange = (
@@ -112,18 +120,55 @@ export default function ProviderRegisterForm() {
 
   /* ================= UI ================= */
   return (
-    <div className=" grid grid-cols-1 md:grid-cols-2 bg-background-light dark:bg-background-dark ">
+    <div className="min-h-[564px] flex bg-gray-100 dark:bg-gray-900 transition-colors">
+      {/* Left Section */}
+      <div className="hidden lg:flex w-1/2 items-center justify-center bg-gradient-to-br from-blue-600 to-purple-600 text-white px-16">
+        <div className="max-w-md text-center space-y-6">
 
-      <div className="hidden md:flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-600 text-white">
-        <h1 className="text-4xl font-extrabold">Provider Onboarding</h1>
+          {/* Icon */}
+          <div className="flex justify-center">
+            <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-sm">
+              <Briefcase size={40} />
+            </div>
+          </div>
+
+          {/* Heading */}
+          <h1 className="text-4xl font-bold">
+            Provider Onboarding
+          </h1>
+
+          {/* Supporting Text */}
+          <p className="text-blue-100 text-lg leading-relaxed">
+            Set up your profile, manage your availability, and start receiving
+            appointment requests from clients seamlessly.
+          </p>
+
+          {/* Feature Highlights */}
+          <div className="space-y-3 pt-4 text-sm text-blue-100">
+            <div className="flex items-center justify-center gap-2">
+              <CalendarCheck size={16} />
+              <span>Manage Appointments Easily</span>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <TrendingUp size={16} />
+              <span>Grow Your Client Base</span>
+            </div>
+          </div>
+
+        </div>
       </div>
 
       <div className="flex items-center justify-center px-6">
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-2xl relative -top-4 rounded-3xl p-8 space-y-5 bg-surface-light dark:bg-surface-dark"
+          className="space-y-5"
         >
           <h2 className="text-3xl font-bold">Register as Provider</h2>
+          {Object.values(errors).some(Boolean) && (
+            <p className="text-sm text-red-500 mt-1 mb-1">
+              Please fix the highlighted fields.
+            </p>
+          )}
 
           {/* AVATAR */}
           <div>
@@ -131,7 +176,18 @@ export default function ProviderRegisterForm() {
               Upload Photo
               <input hidden type="file" accept="image/*" onChange={handleAvatarChange} />
             </label>
-            {errors.avatar && <p className="text-red-500 text-sm">{errors.avatar}</p>}
+            {avatarPreview && (
+              <div className="mt-2 flex items-center gap-3">
+                <img
+                  src={avatarPreview}
+                  alt="Selected provider profile"
+                  className="w-10 h-10 rounded-full object-cover border"
+                />
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {avatar?.name}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* GRID */}
@@ -142,29 +198,27 @@ export default function ProviderRegisterForm() {
             <IconInput icon={<Briefcase size={18} />} name="speciality" value={form.speciality} onChange={handleChange} error={errors.speciality} placeholder="Speciality" />
             <IconInput icon={<MapPin size={18} />} name="city" value={form.city} onChange={handleChange} error={errors.city} placeholder="City" />
             <IconInput icon={<IndianRupee size={18} />} name="hourlyPrice" value={form.hourlyPrice} onChange={handleChange} error={errors.hourlyPrice} placeholder="Hourly Price" type="number" />
+            <IconInput icon={<MapPin size={18} />} name="address" value={form.address} onChange={handleChange} error={errors.address} placeholder="Address" />
+            <div>
+              <select
+                name="categoryId"
+                value={form.categoryId}
+                onChange={handleChange}
+                title={errors.categoryId || ""}
+                className={`w-full py-3 px-4 rounded-xl border ${errors.categoryId ? "border-red-500" : ""}`}
+              >
+                <option value="">Select Category</option>
+                {categories.map((c) => (
+                  <option key={c._id} value={c._id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
-
-          {/* ADDRESS */}
-          <IconInput icon={<MapPin size={18} />} name="address" value={form.address} onChange={handleChange} error={errors.address} placeholder="Address" />
-
-          {/* CATEGORY */}
-          <select
-            name="categoryId"
-            value={form.categoryId}
-            onChange={handleChange}
-            className={`w-full py-3 px-4 rounded-xl border ${errors.categoryId ? "border-red-500" : ""}`}
-          >
-            <option value="">Select Category</option>
-            {categories.map((c) => (
-              <option key={c._id} value={c._id}>{c.name}</option>
-            ))}
-          </select>
-          {errors.categoryId && <p className="text-red-500 text-sm">{errors.categoryId}</p>}
 
           <button disabled={loading} className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
             {loading ? "Registering..." : "Register Provider"}
           </button>
-          <p className="text-center relative -top-4 text-sm text-muted-light dark:text-muted-dark mt-6"> Already have an account?{" "} <Link href="/" className="text-primary font-medium hover:underline" > Sign in </Link> </p>
+          <p className="text-center relative -top-4 text-sm text-muted-light dark:text-muted-dark mt-6 "> Already have an account?{" "} <Link href="/" className="text-primary font-medium hover:underline" > Sign in </Link> </p>
         </form>
       </div>
     </div>
@@ -179,12 +233,12 @@ function IconInput({ icon, error, ...props }: any) {
         <span className="absolute left-3 top-1/2 -translate-y-1/2">{icon}</span>
         <input
           {...props}
+          title={error || ""}
           className={`w-full pl-10 pr-4 py-3 rounded-xl border bg-transparent
             ${error ? "border-red-500" : ""}
           `}
         />
       </div>
-      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
   );
 }
@@ -200,6 +254,7 @@ function IconPassword({ value, show, toggle, onChange, error }: any) {
           type={show ? "text" : "password"}
           onChange={onChange}
           placeholder="Password"
+          title={error || ""}
           className={`w-full pl-10 pr-10 py-3 rounded-xl border bg-transparent
             ${error ? "border-red-500" : ""}
           `}
@@ -208,7 +263,6 @@ function IconPassword({ value, show, toggle, onChange, error }: any) {
           {show ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
       </div>
-      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
   );
 }

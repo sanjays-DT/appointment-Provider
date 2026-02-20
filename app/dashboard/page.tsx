@@ -13,6 +13,7 @@ import {
   Legend,
 } from "chart.js";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import { CalendarCheck, CalendarDays, Ban } from "lucide-react";
 import api from "@/lib/axios";
 
@@ -42,15 +43,22 @@ const EMPTY_WEEKLY_BOOKINGS: Booking[] = [];
 
 export default function DashboardPage() {
   const { provider, isInitializing } = useAuth();
+  const { theme } = useTheme();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const providerId = provider.id;
 
   // =============================
   // FETCH DASHBOARD DATA
   // =============================
   useEffect(() => {
-    if (isInitializing || !provider?._id) return;
+    if (isInitializing) return;
+    if (!providerId) {
+      setLoading(false);
+      setError("Provider ID is missing. Please log in again.");
+      return;
+    }
 
     const fetchStats = async () => {
       try {
@@ -58,7 +66,7 @@ export default function DashboardPage() {
         setError(null);
 
         const { data } = await api.get<DashboardStats>(
-          `/providers/${provider._id}/dashboard-stats`
+          `/providers/${providerId}/dashboard-stats`
         );
 
         if (
@@ -79,39 +87,39 @@ export default function DashboardPage() {
     };
 
     fetchStats();
-  }, [isInitializing, provider]);
+  }, [isInitializing, providerId]);
 
   const weeklyBookings = stats?.weeklyBookings ?? EMPTY_WEEKLY_BOOKINGS;
 
-  // =============================
-  // DARK MODE CHART (FORCED DARK)
-  // =============================
   const chartData = useMemo(() => {
+    const pointColor = theme === "dark" ? "#60A5FA" : "#2563EB";
     return {
       labels: weeklyBookings.map((b) => b.label),
       datasets: [
         {
           label: "Bookings",
           data: weeklyBookings.map((b) => b.value),
-          borderColor: "#3B82F6",
-          backgroundColor: "rgba(59,130,246,0.25)",
+          borderColor: pointColor,
+          backgroundColor:
+            theme === "dark" ? "rgba(96,165,250,0.25)" : "rgba(37,99,235,0.18)",
           borderWidth: 3,
           tension: 0.4,
           pointRadius: 5,
-          pointBackgroundColor: "#3B82F6",
+          pointBackgroundColor: pointColor,
         },
       ],
     };
-  }, [weeklyBookings]);
+  }, [theme, weeklyBookings]);
 
   const chartOptions = useMemo(() => {
+    const isDark = theme === "dark";
     return {
       responsive: true,
-      maintainAspectRatio: false, // allows custom height
+      maintainAspectRatio: false,
       plugins: {
         legend: {
           labels: {
-            color: "#FFFFFF",
+            color: isDark ? "#E5E7EB" : "#1F2937",
             font: {
               size: 13,
               weight: 500,
@@ -121,40 +129,40 @@ export default function DashboardPage() {
         title: {
           display: true,
           text: "Weekly Bookings",
-          color: "#FFFFFF",
+          color: isDark ? "#F9FAFB" : "#111827",
           font: {
             size: 16,
             weight: 600,
           },
         },
         tooltip: {
-          backgroundColor: "#111827",
-          titleColor: "#FFFFFF",
-          bodyColor: "#E5E7EB",
-          borderColor: "#1F2937",
+          backgroundColor: isDark ? "#111827" : "#FFFFFF",
+          titleColor: isDark ? "#FFFFFF" : "#111827",
+          bodyColor: isDark ? "#E5E7EB" : "#374151",
+          borderColor: isDark ? "#374151" : "#D1D5DB",
           borderWidth: 1,
         },
       },
       scales: {
         x: {
           ticks: {
-            color: "#D1D5DB",
+            color: isDark ? "#D1D5DB" : "#374151",
           },
           grid: {
-            color: "rgba(255,255,255,0.08)",
+            color: isDark ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.08)",
           },
         },
         y: {
           ticks: {
-            color: "#D1D5DB",
+            color: isDark ? "#D1D5DB" : "#374151",
           },
           grid: {
-            color: "rgba(255,255,255,0.08)",
+            color: isDark ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.08)",
           },
         },
       },
     };
-  }, []);
+  }, [theme]);
 
   // =============================
   // STATES
@@ -162,15 +170,15 @@ export default function DashboardPage() {
 
   if (isInitializing) {
     return (
-      <div className="min-h-screen bg-black px-6 py-8">
-        <p className="text-gray-400">Loading provider info...</p>
+      <div className="w-full bg-slate-50 dark:bg-neutral-950 px-6 py-8">
+        <p className="text-gray-500 dark:text-gray-400">Loading provider info...</p>
       </div>
     );
   }
 
   if (!provider) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-[70vh] w-full bg-slate-50 dark:bg-neutral-950 flex items-center justify-center">
         <p className="text-red-500">
           Provider not found. Please log in again.
         </p>
@@ -180,18 +188,18 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black px-6 py-8">
+      <div className="w-full bg-slate-50 dark:bg-neutral-950 px-6 py-8">
         <div className="max-w-6xl mx-auto space-y-6">
-          <div className="h-8 w-40 bg-gray-800 rounded animate-pulse" />
+          <div className="h-8 w-40 bg-gray-200 dark:bg-neutral-800 rounded animate-pulse" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="bg-gray-900 p-6 rounded-xl animate-pulse min-h-[120px]"
+                className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 p-6 rounded-xl animate-pulse min-h-[120px]"
               />
             ))}
           </div>
-          <div className="bg-gray-900 rounded-xl animate-pulse h-[260px]" />
+          <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl animate-pulse h-[260px]" />
         </div>
       </div>
     );
@@ -199,7 +207,7 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-[70vh] w-full bg-slate-50 dark:bg-neutral-950 flex items-center justify-center">
         <p className="text-red-500">Error loading dashboard: {error}</p>
       </div>
     );
@@ -207,8 +215,8 @@ export default function DashboardPage() {
 
   if (!stats) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <p className="text-gray-400">
+      <div className="min-h-[70vh] w-full bg-slate-50 dark:bg-neutral-950 flex items-center justify-center">
+        <p className="text-gray-500 dark:text-gray-400">
           No dashboard stats available.
         </p>
       </div>
@@ -234,43 +242,49 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white px-6 py-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-gray-400 mt-2">
-            Track your appointment performance at a glance.
-          </p>
-        </div>
+  <div className="w-full h-[552px] overflow-hidden bg-slate-50 dark:bg-neutral-950 text-gray-900 dark:text-gray-100 px-6 py-6">
+    <div className="h-full max-w-6xl mx-auto flex flex-col">
 
-        {/* Stat Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {statCards.map((card) => (
-            <div
-              key={card.title}
-              className="bg-gray-900 p-6 rounded-xl border border-gray-800 hover:border-blue-500 transition"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-gray-400">{card.title}</p>
-                <card.icon className="h-5 w-5 text-blue-400" />
-              </div>
-
-              <h2 className="text-3xl font-bold">{card.value}</h2>
-            </div>
-          ))}
-        </div>
-
-        {/* Reduced Chart Size */}
-        <div className="bg-gray-900 p-6 rounded-xl border border-gray-800 h-[260px]">
-          {weeklyBookings.length === 0 ? (
-            <p className="text-gray-400">
-              No weekly bookings available.
-            </p>
-          ) : (
-            <Line data={chartData} options={chartOptions} />
-          )}
-        </div>
+      {/* Header */}
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+          Track your appointment performance at a glance.
+        </p>
       </div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        {statCards.map((card) => (
+          <div
+            key={card.title}
+            className="bg-white dark:bg-neutral-900 p-4 rounded-xl border border-gray-200 dark:border-neutral-800"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {card.title}
+              </p>
+              <card.icon className="h-4 w-4 text-blue-400" />
+            </div>
+
+            <h2 className="text-2xl font-bold">{card.value}</h2>
+          </div>
+        ))}
+      </div>
+
+      {/* Chart - Takes Remaining Space */}
+      <div className="flex-1 bg-white dark:bg-neutral-900 p-4 rounded-xl border border-gray-200 dark:border-neutral-800 min-h-0">
+        {weeklyBookings.length === 0 ? (
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
+            No weekly bookings available.
+          </p>
+        ) : (
+          <Line data={chartData} options={chartOptions} />
+        )}
+      </div>
+
     </div>
-  );
+  </div>
+);
+
 }

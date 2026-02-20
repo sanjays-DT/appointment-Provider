@@ -1,4 +1,3 @@
-// services/appointmentService.ts
 import axios from '../lib/axios'; // your configured axios instance
 
 interface AppointmentData {

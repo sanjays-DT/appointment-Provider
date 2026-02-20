@@ -9,7 +9,6 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function UnavailableDatesPage() {
   const { provider } = useAuth();
-
   const providerId = provider?._id || provider?.id || null;
 
   const [viewMonth, setViewMonth] = useState(() => {
@@ -21,9 +20,7 @@ export default function UnavailableDatesPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  /* =========================
-     FETCH UNAVAILABLE DATES
-     ========================= */
+  /* ================= FETCH ================= */
   useEffect(() => {
     if (!providerId) return;
 
@@ -41,47 +38,39 @@ export default function UnavailableDatesPage() {
     fetchData();
   }, [providerId]);
 
-  /* =========================
-     SAVE UNAVAILABLE DATE
-     ========================= */
+  /* ================= SAVE ================= */
   const saveUnavailableDate = async () => {
-  if (!providerId || !selectedDate) return;
+    if (!providerId || !selectedDate) return;
 
-  try {
-    setSaving(true);
+    try {
+      setSaving(true);
 
-    if (blockedDates.includes(selectedDate)) {
-      // 🔴 REMOVE (Revoke leave)
-      const { data } = await api.delete(
-        `/providers/${providerId}/unavailable-dates`,
-        { data: { date: selectedDate } }
-      );
+      if (blockedDates.includes(selectedDate)) {
+        const { data } = await api.delete(
+          `/providers/${providerId}/unavailable-dates`,
+          { data: { date: selectedDate } }
+        );
+        setBlockedDates(data.unavailableDates);
+        toast.success("Holiday removed");
+      } else {
+        const updatedDates = [...blockedDates, selectedDate];
 
-      setBlockedDates(data.unavailableDates);
-      toast.success("Holiday removed");
-    } else {
-      // 🟢 ADD
-      const updatedDates = [...blockedDates, selectedDate];
+        const { data } = await api.put(
+          `/providers/${providerId}/unavailable-dates`,
+          { dates: updatedDates }
+        );
 
-      const { data } = await api.put(
-        `/providers/${providerId}/unavailable-dates`,
-        { dates: updatedDates }
-      );
-
-      setBlockedDates(data.unavailableDates);
-      toast.success("Holiday added");
+        setBlockedDates(data.unavailableDates);
+        toast.success("Holiday added");
+      }
+    } catch {
+      toast.error("Action failed");
+    } finally {
+      setSaving(false);
     }
+  };
 
-  } catch (err: any) {
-    toast.error("Action failed");
-  } finally {
-    setSaving(false);
-  }
-};
-
-  /* =========================
-     CALENDAR LOGIC
-     ========================= */
+  /* ================= CALENDAR ================= */
 
   const monthLabel = useMemo(
     () =>
@@ -96,51 +85,74 @@ export default function UnavailableDatesPage() {
     const year = viewMonth.getFullYear();
     const month = viewMonth.getMonth();
 
-    const first = new Date(year, month, 1);
-    const last = new Date(year, month + 1, 0);
+    const firstDay = new Date(year, month, 1);
+    const startDayIndex = firstDay.getDay();
 
-    const leading = first.getDay();
-    const totalDays = last.getDate();
+    const totalDays = new Date(year, month + 1, 0).getDate();
 
     const cells: (Date | null)[] = [];
 
-    for (let i = 0; i < leading; i++) cells.push(null);
-    for (let d = 1; d <= totalDays; d++)
+    // Leading empty cells
+    for (let i = 0; i < startDayIndex; i++) {
+      cells.push(null);
+    }
+
+    // Actual days
+    for (let d = 1; d <= totalDays; d++) {
       cells.push(new Date(year, month, d));
-    while (cells.length % 7 !== 0) cells.push(null);
+    }
+
+    // Force 42 cells (6 rows × 7 columns)
+    while (cells.length < 42) {
+      cells.push(null);
+    }
 
     return cells;
   }, [viewMonth]);
 
- const formatDate = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
-
-
-  /* =========================
-     RENDER
-     ========================= */
+  /* ================= RENDER ================= */
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-neutral-950 px-4 sm:px-6 py-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="h-[555px] w-full bg-slate-50 dark:bg-neutral-950 px-4 py-4 flex justify-center relative -top-2">
+      <div className="w-full max-w-5xl">
 
-        {/* Header */}
-        <div className="mb-6 flex justify-between items-center flex-wrap gap-4">
-          <div className="flex items-center gap-3">
-            <span className="h-10 w-10 rounded-xl bg-red-50 text-red-600 inline-flex items-center justify-center dark:bg-red-500/10 dark:text-red-400">
-              <Ban size={18} />
-            </span>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-              Unavailable Dates
-            </h2>
+        <div className="rounded-2xl bg-white dark:bg-neutral-900 p-4 shadow-sm border dark:border-neutral-800">
+
+          {/* Header */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="h-8 w-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center dark:bg-red-500/10 dark:text-red-400">
+                <Ban size={16} />
+              </span>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Unavailable Dates
+              </h2>
+            </div>
+
+            <button
+              onClick={saveUnavailableDate}
+              disabled={!selectedDate || saving}
+              className={clsx(
+                "h-9 px-3 rounded-lg text-sm font-medium transition",
+                !selectedDate || saving
+                  ? "bg-gray-200 dark:bg-neutral-800 cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              )}
+            >
+              <BookmarkCheck size={14} className="inline mr-1" />
+              {saving ? "Saving..." : "Save"}
+            </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Month Navigation */}
+          <div className="flex items-center justify-between mb-3">
             <button
               onClick={() =>
                 setViewMonth(
@@ -148,12 +160,12 @@ export default function UnavailableDatesPage() {
                     new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
                 )
               }
-              className="h-10 w-10 flex items-center justify-center rounded-xl border dark:border-neutral-800"
+              className="h-8 w-8 flex items-center justify-center rounded-lg border dark:border-neutral-800"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={16} />
             </button>
 
-            <span className="px-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
               {monthLabel}
             </span>
 
@@ -164,44 +176,33 @@ export default function UnavailableDatesPage() {
                     new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
                 )
               }
-              className="h-10 w-10 flex items-center justify-center rounded-xl border dark:border-neutral-800"
+              className="h-8 w-8 flex items-center justify-center rounded-lg border dark:border-neutral-800"
             >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Calendar */}
-        <div className="rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-sm border dark:border-neutral-800">
-          <div className="flex justify-between items-center mb-4">
-            <button
-              onClick={saveUnavailableDate}
-              disabled={!selectedDate || saving}
-              className={clsx(
-                "h-10 px-4 rounded-xl text-sm font-medium",
-                !selectedDate || saving
-                  ? "bg-gray-200 dark:bg-neutral-800 cursor-not-allowed"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
-              )}
-            >
-              <BookmarkCheck size={16} className="inline mr-2" />
-              {saving ? "Saving..." : "Save selected date"}
+              <ChevronRight size={16} />
             </button>
           </div>
 
-          <div className="grid grid-cols-7 border rounded-xl overflow-hidden dark:border-neutral-800">
+          {/* Weekdays */}
+          <div className="grid grid-cols-7 text-xs font-semibold text-center mb-1">
             {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d) => (
-              <div
-                key={d}
-                className="py-2 text-center text-xs font-semibold bg-gray-100 dark:bg-neutral-800"
-              >
+              <div key={d} className="py-1 text-gray-500 dark:text-gray-400">
                 {d}
               </div>
             ))}
+          </div>
+
+          {/* Calendar Grid - FIXED HEIGHT */}
+          <div className="grid grid-cols-7 grid-rows-6 border rounded-xl overflow-hidden dark:border-neutral-800 h-[360px]">
 
             {daysInGrid.map((date, i) => {
-              if (!date)
-                return <div key={i} className="min-h-[100px] border" />;
+              if (!date) {
+                return (
+                  <div
+                    key={i}
+                    className="border dark:border-neutral-800"
+                  />
+                );
+              }
 
               const dateStr = formatDate(date);
               const isBlocked = blockedDates.includes(dateStr);
@@ -212,28 +213,32 @@ export default function UnavailableDatesPage() {
                   key={dateStr}
                   onClick={() => setSelectedDate(dateStr)}
                   className={clsx(
-                    "text-left p-2 min-h-[100px] border transition",
+                    "p-2 border flex flex-col justify-start text-left transition dark:border-neutral-800",
                     isSelected && "ring-2 ring-blue-500",
                     isBlocked
                       ? "bg-red-100 dark:bg-red-900/30"
                       : "hover:bg-gray-50 dark:hover:bg-neutral-800"
                   )}
                 >
-                  <div className="text-sm font-semibold">
+                  <span className="text-sm font-semibold">
                     {date.getDate()}
-                  </div>
+                  </span>
 
-                  <div className="text-xs mt-2">
-                    {isBlocked ? "Not Available" : "Available"}
-                  </div>
+                  <span
+                    className={clsx(
+                      "mt-1 w-2 h-2 rounded-full",
+                      isBlocked ? "bg-red-500" : "bg-green-500"
+                    )}
+                  />
                 </button>
               );
             })}
           </div>
 
-          <div className="mt-4 text-sm">
-            Selected date:{" "}
-            <span className="font-medium">
+          {/* Selected Info */}
+          <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+            Selected:{" "}
+            <span className="font-medium text-gray-900 dark:text-gray-100">
               {selectedDate || "None"}
             </span>
           </div>

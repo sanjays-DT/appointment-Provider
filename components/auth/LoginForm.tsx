@@ -9,6 +9,13 @@ import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { validateLogin } from "@/utils/validation";
+import { jwtDecode } from "jwt-decode";
+
+type DecodedToken = {
+  role?: string;
+  userType?: string;
+  type?: string;
+};
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -33,12 +40,21 @@ export default function LoginForm() {
     setLoading(true);
     try {
       const data = await loginProvider({ email, password });
+      const decoded = data.token ? jwtDecode<DecodedToken>(data.token) : null;
+      const role = decoded?.role 
 
-      login(data.token, data.provider);
+      if (role !== "provider") {
+        toast.error("Only providers are allowed to login here.");
+        setLoading(false);
+        return;
+      }
+
+      login(data.token, data.user);
+      console.log( data.account);
       toast.success("Login successful");
       router.replace("/dashboard");
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Login failed");
+      toast.error( "Login failed");
     } finally {
       setLoading(false);
     }
