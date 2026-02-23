@@ -1,8 +1,8 @@
-import axios from 'axios';
+import axios from '../lib/axios';
 
 // Get all categories
 export const getCategories = async () => {
-  return await axios.get('http://localhost:5000/api/categories');
+  return await axios.get('/categories');
 };
 
 // Get single category by ID
