@@ -1,8 +1,8 @@
 import axios from "axios";
 import { getToken } from "@/lib/auth";
 
-const NEXT_PUBLIC_API_BASE_URL = "http://localhost:5000/api";
-export const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || NEXT_PUBLIC_API_BASE_URL;
+const localurl = "http://localhost:5000/api";
+export const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || localurl;
 
 const instance = axios.create({
   baseURL: BASE_URL,
