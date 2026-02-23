@@ -238,7 +238,7 @@ export default function ProviderForm() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-2 space-y-5">
+          <form id="provider-profile-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-2 space-y-5">
             {/* Basic Info */}
             <div>
               <h3 className="text-md font-semibold mb-3 text-slate-900 dark:text-gray-100">Basic Information</h3>
@@ -354,6 +354,7 @@ export default function ProviderForm() {
 
             <button
               type="submit"
+              form="provider-profile-form"
               disabled={formDisabled}
               className="p-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition"
               title="Save Changes"
