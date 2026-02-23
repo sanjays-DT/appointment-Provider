@@ -12,7 +12,7 @@ export const loginProvider = async (payload: LoginPayload) => {
 
 export const registerProvider = async (payload: RegisterPayload) => {
   const { data } = await axios.post(
-    `/providers/register`,
+    `/providers/auth/register`,
     payload
   );
   return data;
