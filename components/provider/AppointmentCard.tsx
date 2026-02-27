@@ -107,18 +107,20 @@ export default function AppointmentsTable() {
   };
 
   const handleReject = async (appt: Appointment) => {
+    const startIST = formatIST(appt.start);
+    const endIST = formatIST(appt.end);
+
+    const startTime = startIST.split(", ")[1].slice(0, 5);
+    const endTime = endIST.split(", ")[1].slice(0, 5);
+
     try {
       await rejectAppointment(appt._id);
 
       if (typeof appt.providerId !== "string") {
         await api.put(`/admin/${appt.providerId._id}/unlock-slot`, {
           date: appt.start.slice(0, 10),
-          slotTime: `${new Date(appt.start)
-            .toTimeString()
-            .slice(0, 5)} - ${new Date(appt.end)
-              .toTimeString()
-              .slice(0, 5)}`,
-        });
+          slotTime: `${startTime} - ${endTime}`,
+        }); 
       }
 
       updateStatus(appt._id, "rejected");
@@ -245,6 +247,12 @@ export default function AppointmentsTable() {
     }
   };
 
+  const formatIST = (dateString: string) => {
+    return new Date(dateString).toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+    });
+  };
+
   if (loading)
     return (
       <p className="text-center py-10 text-gray-500 dark:text-gray-400">
@@ -268,8 +276,8 @@ export default function AppointmentsTable() {
         typeof appt.providerId === "string"
           ? appt.providerId
           : appt.providerId?.name || "";
-      const startText = new Date(appt.start).toLocaleString();
-      const endText = new Date(appt.end).toLocaleString();
+      const startText = formatIST(appt.start);
+      const endText = formatIST(appt.end);
       const status = appt.status || "";
 
       const haystack = [
@@ -348,13 +356,8 @@ export default function AppointmentsTable() {
                         : appt.userId?.name}
                     </td>
 
-                    <td className="px-4 py-3">
-                      {new Date(appt.start).toLocaleString()}
-                    </td>
-
-                    <td className="px-4 py-3">
-                      {new Date(appt.end).toLocaleString()}
-                    </td>
+                    <td>{formatIST(appt.start)}</td>
+                    <td>{formatIST(appt.end)}</td>
 
                     <td className="px-4 py-3 font-semibold capitalize">
                       <span
