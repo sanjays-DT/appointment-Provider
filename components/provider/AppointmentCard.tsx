@@ -37,7 +37,7 @@ const formatDateInput = (value: string | Date) => {
 
 const isPastSlot = (dateStr: string, slotTime: string) => {
   const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const slotDate = new Date(`${dateStr}T00:00:00`);
 
   if (slotDate < todayStart) return true;
