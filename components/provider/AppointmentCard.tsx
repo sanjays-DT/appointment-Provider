@@ -349,11 +349,11 @@ export default function AppointmentsTable() {
                     </td>
 
                     <td className="px-4 py-3">
-                      {new Date(appt.start).toLocaleString()}
+                      {new Date(appt.start).toLocaleString("en-IN")}
                     </td>
 
                     <td className="px-4 py-3">
-                      {new Date(appt.end).toLocaleString()}
+                      {new Date(appt.end).toLocaleString("en-IN")}
                     </td>
 
                     <td className="px-4 py-3 font-semibold capitalize">
