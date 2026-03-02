@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: "standalone",
+  experimental: {
+    // helps with deployment stability
+  },
 };
 
 export default nextConfig;
