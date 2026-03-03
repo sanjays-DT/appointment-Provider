@@ -36,19 +36,28 @@ const formatDateInput = (value: string | Date) => {
 };
 
 const isPastSlot = (dateStr: string, slotTime: string) => {
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  
+  // Get current time in user's timezone
   const now = new Date();
-  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const slotDate = new Date(`${dateStr}T00:00:00`);
-
-  if (slotDate < todayStart) return true;
-  if (slotDate > todayStart) return false;
-
+  
+  // Create the slot time in user's timezone
   const [startTime] = slotTime.split(" - ");
-  const [hours, minutes] = startTime.split(":").map(Number);
-  const slotDateTime = new Date();
-  slotDateTime.setHours(hours, minutes, 0, 0);
-
-  return slotDateTime <= now;
+  const slotDateTimeStr = `${dateStr}T${startTime}:00`;
+  const slotDateTime = new Date(slotDateTimeStr);
+  
+  // Debug log
+  console.log("isPastSlot check:", {
+    slot: slotTime,
+    slotDateTime: slotDateTime.toString(),
+    slotUTC: slotDateTime.toISOString(),
+    now: now.toString(),
+    nowUTC: now.toISOString(),
+    isPast: slotDateTime < now,
+    timezone: userTimezone
+  });
+  
+  return slotDateTime < now;
 };
 
 export default function AppointmentsTable() {
@@ -139,46 +148,75 @@ export default function AppointmentsTable() {
   };
 
   const fetchRescheduleSlots = async (appt: Appointment, date: string) => {
-    if (!date) {
-      setRescheduleSlots([]);
-      return;
+  if (!date) {
+    setRescheduleSlots([]);
+    return;
+  }
+
+  const providerId = resolveProviderId(appt);
+  if (!providerId) {
+    toast.error("Provider ID not found for slot lookup");
+    setRescheduleSlots([]);
+    return;
+  }
+
+  try {
+    setLoadingRescheduleSlots(true);
+    
+    // ✅ FIX 1: Get user's timezone
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    console.log("Fetching slots:", {
+      providerId,
+      date,
+      timezone: userTimezone,
+      currentTime: new Date().toString()
+    });
+
+    // ✅ FIX 2: Send timezone to server
+    const res = await api.get(`/providers/${providerId}/slots`, {
+      params: { 
+        date,
+        timezone: userTimezone  // 👈 CRITICAL - Add this!
+      },
+    });
+
+    console.log("Server response:", res.data);
+
+    const slots: ProviderSlot[] = Array.isArray(res?.data?.slots) ? res.data.slots : [];
+    
+    // ✅ FIX 3: Log slots before filtering for debugging
+    console.log("All slots from server:", slots.map(s => ({
+      time: s.time,
+      isAvailable: s.isAvailable,
+      isBooked: s.isBooked,
+      isPast: isPastSlot(date, s.time)
+    })));
+
+    const availableTimes = slots
+      .filter(
+        (slot) =>
+          slot?.isAvailable &&
+          !slot?.isBooked &&
+          typeof slot?.time === "string" &&
+          !isPastSlot(date, slot.time)
+      )
+      .map((slot) => slot.time);
+
+    console.log("Available slots after filtering:", availableTimes);
+
+    setRescheduleSlots(availableTimes);
+    if (!availableTimes.includes(selectedRescheduleSlot)) {
+      setSelectedRescheduleSlot("");
     }
-
-    const providerId = resolveProviderId(appt);
-    if (!providerId) {
-      toast.error("Provider ID not found for slot lookup");
-      setRescheduleSlots([]);
-      return;
-    }
-
-    try {
-      setLoadingRescheduleSlots(true);
-      const res = await api.get(`/providers/${providerId}/slots`, {
-        params: { date },
-      });
-
-      const slots: ProviderSlot[] = Array.isArray(res?.data?.slots) ? res.data.slots : [];
-      const availableTimes = slots
-        .filter(
-          (slot) =>
-            slot?.isAvailable &&
-            !slot?.isBooked &&
-            typeof slot?.time === "string" &&
-            !isPastSlot(date, slot.time)
-        )
-        .map((slot) => slot.time);
-
-      setRescheduleSlots(availableTimes);
-      if (!availableTimes.includes(selectedRescheduleSlot)) {
-        setSelectedRescheduleSlot("");
-      }
-    } catch {
-      toast.error("Failed to load slots for selected date");
-      setRescheduleSlots([]);
-    } finally {
-      setLoadingRescheduleSlots(false);
-    }
-  };
+  } catch (error) {
+    console.error("Failed to fetch slots:", error);
+    toast.error("Failed to load slots for selected date");
+    setRescheduleSlots([]);
+  } finally {
+    setLoadingRescheduleSlots(false);
+  }
+};
 
   const handleOpenReschedule = async (appt: Appointment) => {
     const defaultDate = formatDateInput(appt.start);
@@ -196,54 +234,71 @@ export default function AppointmentsTable() {
     setRescheduleSlots([]);
   };
 
-  const handleRescheduleSave = async (appt: Appointment) => {
-    if (!rescheduleDate || !selectedRescheduleSlot) {
-      toast.error("Pick a date and slot");
-      return;
+ const handleRescheduleSave = async (appt: Appointment) => {
+  if (!rescheduleDate || !selectedRescheduleSlot) {
+    toast.error("Pick a date and slot");
+    return;
+  }
+
+  const [startStr, endStr] = selectedRescheduleSlot.split(" - ");
+  
+  // Get user's timezone
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  
+  // Create local time strings
+  const startLocal = `${rescheduleDate}T${startStr}:00`;
+  const endLocal = `${rescheduleDate}T${endStr}:00`;
+  
+  // Validate if slot is in future
+  const now = new Date();
+  const selectedDateTime = new Date(startLocal);
+  
+  console.log("🕐 Reschedule Request:", {
+    localTime: startLocal,
+    timezone: userTimezone,
+    selectedUTC: selectedDateTime.toISOString(),
+    currentTime: {
+      local: now.toString(),
+      utc: now.toISOString()
     }
+  });
+  
+  if (selectedDateTime < now) {
+    toast.error("Cannot reschedule to past slot");
+    return;
+  }
 
-    const [startStr, endStr] = selectedRescheduleSlot.split(" - ");
-    const start = new Date(`${rescheduleDate}T${startStr}:00`);
-    const end = new Date(`${rescheduleDate}T${endStr}:00`);
+  if (!window.confirm(`Reschedule to ${selectedRescheduleSlot} on ${rescheduleDate}?`)) return;
 
-    if (start < new Date()) {
-      toast.error("Cannot reschedule to past slot");
-      return;
-    }
+  try {
+    // ✅ TypeScript now knows 'timezone' is valid!
+    await rescheduleAppointment(appt._id, {
+      start: startLocal,
+      end: endLocal,
+      timezone: userTimezone  // 👈 No more error!
+    });
 
-    if (!window.confirm("Reschedule to selected slot?")) return;
-
-    try {
-      await rescheduleAppointment(appt._id, {
-        start: start.toISOString(),
-        end: end.toISOString(),
-      });
-
-      setAppointments(prev =>
-        prev.map(a =>
-          a._id === appt._id
-            ? { ...a, start: start.toISOString(), end: end.toISOString() }
-            : a
-        )
-      );
-
-      toast.success("Rescheduled successfully");
-      closeReschedule();
-    } catch (err: any) {
-      const responseData = err?.response?.data;
-      console.error("Reschedule error:", {
-        status: err?.response?.status,
-        data: responseData,
-        message: err?.message,
-      });
-      const message =
-        responseData?.message ||
-        responseData?.error ||
-        err?.message ||
-        "Failed to reschedule";
-      toast.error(message);
-    }
-  };
+    toast.success("Rescheduled successfully");
+    closeReschedule();
+    await fetchAppointments();
+    
+  } catch (err: any) {
+    console.error("Reschedule error:", {
+      error: err,
+      sentData: {
+        start: startLocal,
+        end: endLocal,
+        timezone: userTimezone
+      },
+      response: err?.response?.data
+    });
+    
+    const message = err?.response?.data?.message || 
+                    err?.message || 
+                    "Failed to reschedule";
+    toast.error(message);
+  }
+};
 
   if (loading)
     return (
