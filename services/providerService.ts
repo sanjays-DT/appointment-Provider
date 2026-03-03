@@ -20,7 +20,8 @@ export const updateProvider = async (id: string, data: FormData) => {
   return await axios.put(`/providers/${id}`,data);
 };
 
-export const getProviderAvatarURL = (id: string, baseURL: string) => {
+export const getProviderAvatarURL = (id: string, baseURL: string | undefined) => {
+  if (!baseURL) return "";
   return `${baseURL}/providers/${id}/avatar`;
 };
 
