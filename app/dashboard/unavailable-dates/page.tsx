@@ -45,16 +45,24 @@ export default function UnavailableDatesPage() {
     try {
       setSaving(true);
 
-      if (blockedDates.includes(selectedDate)) {
+      const isRemoving = blockedDates.includes(selectedDate);
+
+      // Remove holiday (no conflict logic needed)
+      if (isRemoving) {
         const { data } = await api.delete(
           `/providers/${providerId}/unavailable-dates`,
           { data: { date: selectedDate } }
         );
+
         setBlockedDates(data.unavailableDates);
         toast.success("Holiday removed");
-      } else {
-        const updatedDates = [...blockedDates, selectedDate];
+        return;
+      }
 
+      // Add holiday
+      const updatedDates = [...blockedDates, selectedDate];
+
+      try {
         const { data } = await api.put(
           `/providers/${providerId}/unavailable-dates`,
           { dates: updatedDates }
@@ -62,9 +70,37 @@ export default function UnavailableDatesPage() {
 
         setBlockedDates(data.unavailableDates);
         toast.success("Holiday added");
+      } catch (err: any) {
+
+        // If backend says conflicts exist
+        if (err.response?.data?.hasConflicts) {
+
+          const confirmCancel = window.confirm(
+            `There are ${err.response.data.appointmentsCount} approved appointments on this date.\n\nDo you want to cancel them and continue?`
+          );
+
+          if (!confirmCancel) {
+            setSaving(false);
+            return;
+          }
+
+          // Force cancel call
+          const { data } = await api.put(
+            `/providers/${providerId}/unavailable-dates`,
+            {
+              dates: updatedDates,
+              forceCancel: true,
+              cancelReason: "Provider marked date unavailable"
+            }
+          );
+
+          setBlockedDates(data.unavailableDates);
+          toast.success("Appointments cancelled and holiday added");
+        } else {
+          toast.error("Action failed");
+        }
       }
-    } catch {
-      toast.error("Action failed");
+
     } finally {
       setSaving(false);
     }

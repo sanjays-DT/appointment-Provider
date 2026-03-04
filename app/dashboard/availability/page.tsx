@@ -244,12 +244,12 @@ export default function AvailabilityPage() {
           const res = await api.get(`/providers/${providerId}/slots`, {
             params: {
               date: dateStr,
-              timezone: userTimezone 
+              timezone: userTimezone
             },
           });
-          
+
           // Debug log
-          console.log(`Slots for ${dateStr}:`, res.data); 
+          console.log(`Slots for ${dateStr}:`, res.data);
 
           const backendSlots = res.data?.slots || [];
 
@@ -336,10 +336,40 @@ export default function AvailabilityPage() {
             slotMinutes: d.slotMinutes,
           })),
       });
+
       await fetchTemplate(providerId);
       toast.success("Weekly timing saved");
+
     } catch (err: any) {
-      console.error("Error saving timing:", err);
+
+      const conflict = err?.response?.data?.hasConflicts;
+
+      if (conflict) {
+        const count = err.response.data.appointmentsCount;
+
+        const confirmCancel = window.confirm(
+          `You have ${count} approved appointments. Cancel all and continue?`
+        );
+
+        if (confirmCancel) {
+          await api.put(`/providers/${providerId}/availability`, {
+            weeklyAvailability: availability
+              .filter((d) => d.enabled)
+              .map((d) => ({
+                day: d.day,
+                startTime: d.startTime,
+                endTime: d.endTime,
+                slotMinutes: d.slotMinutes,
+              })),
+            forceCancel: true,
+          });
+
+          await fetchTemplate(providerId);
+          toast.success("Appointments cancelled and availability updated");
+          return;
+        }
+      }
+
       toast.error("Failed to save timing");
     } finally {
       setSavingTemplate(false);
@@ -380,9 +410,39 @@ export default function AvailabilityPage() {
           },
         ],
       });
+
       toast.success("Day overrides saved");
+
     } catch (err: any) {
-      console.error("Error saving overrides:", err);
+
+      const conflict = err?.response?.data?.hasConflicts;
+
+      if (conflict) {
+        const count = err.response.data.appointmentsCount;
+
+        const confirmCancel = window.confirm(
+          `You have ${count} approved appointments on this day. Cancel all and continue?`
+        );
+
+        if (confirmCancel) {
+          await api.put(`/providers/${providerId}/availability`, {
+            dateOverrides: [
+              {
+                date: selectedDay.date,
+                slots: selectedDay.slots.map((s) => ({
+                  time: s.time,
+                  isAvailable: !s.isBooked && s.available,
+                })),
+              },
+            ],
+            forceCancel: true,
+          });
+
+          toast.success("Appointments cancelled and overrides saved");
+          return;
+        }
+      }
+
       toast.error("Failed to save day overrides");
     } finally {
       setSavingDate(null);
